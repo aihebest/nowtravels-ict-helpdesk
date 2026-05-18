@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum NotificationChannel {
+  EMAIL
+  TEAMS
+  IN_APP
+}
+
+model Branch {
+  id          String       @id @default(cuid())
+  name        String
+  code        String       @unique
+  address     String?
+  city        String?
+  region      String?
+  isActive    Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  departments Department[]
+  users       User[]
+  tickets     Ticket[]
+}
+
+model Department {
+  id        String   @id @default(cuid())
+  name      String
+  isActive  Boolean  @default(true)
+  branchId  String
+  branch    Branch   @relation(fields: [branchId], references: [id])
+  users     User[]
+  tickets   Ticket[]
+
+  @@unique([branchId, name])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  users       User[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+model User {
+  id                    String                    @id @default(cuid())
+  entraId               String?                   @unique
+  employeeNo            String?                   @unique
+  fullName              String
+  email                 String                    @unique
+  phone                 String?
+  jobTitle              String?
+  isActive              Boolean                   @default(true)
+  lastLoginAt           DateTime?
+  createdAt             DateTime                  @default(now())
+  branchId              String?
+  branch                Branch?                   @relation(fields: [branchId], references: [id])
+  departmentId          String?
+  department            Department?               @relation(fields: [departmentId], references: [id])
+  roleId                String
+  role                  Role                      @relation(fields: [roleId], references: [id])
+  requestedTickets      Ticket[]                  @relation("RequesterTickets")
+  assignedTickets       Ticket[]                  @relation("AssignedTickets")
+  comments              TicketComment[]
+  attachments           TicketAttachment[]
+  statusChanges         TicketStatusHistory[]
+  assignmentChangesFrom TicketAssignmentHistory[] @relation("OldAssignee")
+  assignmentChangesTo   TicketAssignmentHistory[] @relation("NewAssignee")
+  assignmentsMade       TicketAssignmentHistory[] @relation("AssignedBy")
+  notifications         Notification[]
+  auditLogs             AuditLog[]
+}
+
+model TicketCategory {
+  id            String              @id @default(cuid())
+  name          String              @unique
+  description   String?
+  isActive      Boolean             @default(true)
+  subcategories TicketSubcategory[]
+  tickets       Ticket[]
+}
+
+model TicketSubcategory {
+  id         String         @id @default(cuid())
+  name       String
+  isActive   Boolean        @default(true)
+  categoryId String
+  category   TicketCategory @relation(fields: [categoryId], references: [id])
+  tickets    Ticket[]
+
+  @@unique([categoryId, name])
+}
+
+model SlaPolicy {
+  id                   String         @id @default(cuid())
+  name                 String
+  priority             TicketPriority @unique
+  firstResponseMinutes Int
+  resolutionMinutes    Int
+  escalationMinutes    Int
+  isActive             Boolean        @default(true)
+  tickets              Ticket[]
+}
+
+model Ticket {
+  id                 String                    @id @default(cuid())
+  ticketNumber       String                    @unique
+  title              String
+  description        String
+  priority           TicketPriority            @default(MEDIUM)
+  status             TicketStatus              @default(OPEN)
+  firstResponseDueAt DateTime?
+  resolutionDueAt    DateTime?
+  firstRespondedAt   DateTime?
+  resolvedAt         DateTime?
+  closedAt           DateTime?
+  createdAt          DateTime                  @default(now())
+  updatedAt          DateTime                  @updatedAt
+  requesterId        String
+  requester          User                      @relation("RequesterTickets", fields: [requesterId], references: [id])
+  assignedToId       String?
+  assignedTo         User?                     @relation("AssignedTickets", fields: [assignedToId], references: [id])
+  branchId           String
+  branch             Branch                    @relation(fields: [branchId], references: [id])
+  departmentId       String?
+  department         Department?               @relation(fields: [departmentId], references: [id])
+  categoryId         String
+  category           TicketCategory            @relation(fields: [categoryId], references: [id])
+  subcategoryId      String?
+  subcategory        TicketSubcategory?        @relation(fields: [subcategoryId], references: [id])
+  slaPolicyId        String?
+  slaPolicy          SlaPolicy?                @relation(fields: [slaPolicyId], references: [id])
+  comments           TicketComment[]
+  attachments        TicketAttachment[]
+  statusHistory      TicketStatusHistory[]
+  assignmentHistory  TicketAssignmentHistory[]
+  notifications      Notification[]
+
+  @@index([status, priority])
+  @@index([branchId, createdAt])
+  @@index([requesterId])
+  @@index([assignedToId])
+}
+
+model TicketComment {
+  id         String   @id @default(cuid())
+  comment    String
+  isInternal Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  ticketId   String
+  ticket     Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+}
+
+model TicketAttachment {
+  id           String   @id @default(cuid())
+  fileName     String
+  fileType     String
+  fileSize     Int
+  storageUrl   String
+  createdAt    DateTime @default(now())
+  ticketId     String
+  ticket       Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id])
+}
+
+model TicketStatusHistory {
+  id          String       @id @default(cuid())
+  oldStatus   TicketStatus?
+  newStatus   TicketStatus
+  comment     String?
+  createdAt   DateTime     @default(now())
+  ticketId    String
+  ticket      Ticket       @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  changedById String
+  changedBy   User         @relation(fields: [changedById], references: [id])
+}
+
+model TicketAssignmentHistory {
+  id            String   @id @default(cuid())
+  createdAt     DateTime @default(now())
+  ticketId      String
+  ticket        Ticket   @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  oldAssigneeId String?
+  oldAssignee   User?    @relation("OldAssignee", fields: [oldAssigneeId], references: [id])
+  newAssigneeId String?
+  newAssignee   User?    @relation("NewAssignee", fields: [newAssigneeId], references: [id])
+  assignedById  String
+  assignedBy    User     @relation("AssignedBy", fields: [assignedById], references: [id])
+}
+
+model Notification {
+  id        String              @id @default(cuid())
+  type      String
+  channel   NotificationChannel
+  subject   String
+  message   String
+  isSent    Boolean             @default(false)
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+  userId    String
+  user      User                @relation(fields: [userId], references: [id])
+  ticketId  String?
+  ticket    Ticket?             @relation(fields: [ticketId], references: [id])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  action      String
+  entityType  String
+  entityId    String
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  actorUserId String?
+  actorUser   User?    @relation(fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
