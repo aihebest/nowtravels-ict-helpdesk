@@ -83,6 +83,68 @@ Recommended runtime:
 10. Run the manual `Deploy to Azure App Service` GitHub Actions workflow.
 11. Confirm `/`, `/staff`, `/staff/request`, and `/admin` load.
 
+## Provisioning Script
+
+This repo includes a PowerShell provisioning script:
+
+```powershell
+.\scripts\provision-azure.ps1 `
+  -ResourceGroup "rg-nowtravels-helpdesk-prod" `
+  -Location "uksouth" `
+  -AppName "nowtravels-ict-helpdesk"
+```
+
+Before running it:
+
+```powershell
+az login
+az account set --subscription "<subscription-id-or-name>"
+```
+
+The script creates:
+
+- Resource group
+- Linux App Service Plan
+- Azure App Service
+- Azure Database for PostgreSQL Flexible Server
+- PostgreSQL database
+- Azure Storage Account
+- Private Blob container for attachments
+- Application Insights
+- Core Azure App Service settings
+
+The script prints the GitHub variables and secrets needed by the deployment workflow.
+
+## GitHub Settings
+
+After Azure resources are created, configure these repository variables:
+
+- `AZURE_WEBAPP_NAME`
+- `NEXT_PUBLIC_APP_URL`
+
+Configure these repository secrets:
+
+- `DATABASE_URL`
+- `AZURE_WEBAPP_PUBLISH_PROFILE`
+- `AZURE_STORAGE_CONNECTION_STRING`
+- `APPINSIGHTS_CONNECTION_STRING`
+
+Optional helper script:
+
+```powershell
+winget install GitHub.cli
+gh auth login
+.\scripts\set-github-deployment-settings.ps1 `
+  -Repository "aihebest/nowtravels-ict-helpdesk" `
+  -AzureWebAppName "<app-name>" `
+  -AppUrl "<app-url>" `
+  -DatabaseUrl "<database-url>" `
+  -AzureStorageConnectionString "<storage-connection-string>" `
+  -AppInsightsConnectionString "<appinsights-connection-string>"
+```
+
+The Azure publish profile can be downloaded from the App Service portal or Deployment Center, then added as `AZURE_WEBAPP_PUBLISH_PROFILE`.
+
 ## Future Improvements
 
 - Add staging deployment slot.
