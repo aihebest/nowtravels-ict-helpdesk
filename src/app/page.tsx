@@ -164,7 +164,13 @@ const statusStyles: Record<string, string> = {
 
 type NavigationLabel = (typeof navigation)[number]["label"];
 type CreateMode = Exclude<NavigationLabel, "Dashboard">;
-type UserRole = "Staff Requester" | "ICT Admin";
+export type UserRole =
+  | "Staff Requester"
+  | "Branch Manager"
+  | "ICT Agent"
+  | "ICT Supervisor"
+  | "ICT Admin"
+  | "Auditor";
 
 const staffProfile = {
   name: "Amina Yusuf",

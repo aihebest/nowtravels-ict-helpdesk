@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { HelpdeskApp } from "../page";
+import { HelpdeskApp, type UserRole } from "../page";
 
 export default async function AdminPage() {
   const session = await auth();
@@ -12,8 +12,8 @@ export default async function AdminPage() {
   const role = (session.user as { role?: string }).role;
 
   // Only ICT Admins and ICT Supervisors can access the admin panel
-  const adminRoles = ["ICT Admin", "ICT Supervisor"];
-  if (!role || !adminRoles.includes(role)) {
+  const adminRoles: UserRole[] = ["ICT Admin", "ICT Supervisor"];
+  if (!role || !adminRoles.includes(role as UserRole)) {
     redirect("/staff");
   }
 
@@ -21,7 +21,7 @@ export default async function AdminPage() {
     <HelpdeskApp
       initialAuthenticated
       initialActiveView="Dashboard"
-      initialRole={role}
+      initialRole={role as UserRole}
     />
   );
 }

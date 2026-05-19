@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { HelpdeskApp } from "../page";
+import { HelpdeskApp, type UserRole } from "../page";
 
 export default async function StaffPage() {
   const session = await auth();
@@ -9,7 +9,8 @@ export default async function StaffPage() {
     redirect("/");
   }
 
-  const role = (session.user as { role?: string }).role ?? "Staff Requester";
+  const role =
+    ((session.user as { role?: string }).role as UserRole) ?? "Staff Requester";
 
   return (
     <HelpdeskApp
