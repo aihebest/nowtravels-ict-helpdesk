@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { signIn, signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import {
   AlertTriangle,
   Bell,
@@ -526,13 +528,14 @@ export function HelpdeskApp({
                 {userRole}
               </span>
             </div>
-            <Link
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: "/" })}
               className="mt-4 flex h-10 w-full items-center justify-center gap-2 rounded-md border border-white/15 text-sm font-semibold text-white hover:bg-white/10"
-              href="/"
             >
               <LogOut size={16} />
               Sign out
-            </Link>
+            </button>
           </div>
 
           {userRole === "ICT Admin" ? (
@@ -904,6 +907,37 @@ export function HelpdeskApp({
 }
 
 export default function Home() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated" && session?.user) {
+      const role = (session.user as { role?: string }).role;
+      router.replace(role === "ICT Admin" ? "/admin" : "/staff");
+    }
+  }, [status, session, router]);
+
+  // Show nothing while checking auth state to avoid flash
+  if (status === "loading") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-[#f6f7f4]">
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex size-14 items-center justify-center overflow-hidden rounded-lg bg-[#102820] p-2">
+            <Image
+              src="/nowtravels-logo.jpg"
+              alt="Nowtravels logo"
+              width={56}
+              height={56}
+              className="h-full w-full object-contain"
+              priority
+            />
+          </div>
+          <p className="text-sm text-stone-500">Loading…</p>
+        </div>
+      </main>
+    );
+  }
+
   return <HelpdeskApp />;
 }
 
@@ -945,8 +979,8 @@ function LoginScreen() {
           </div>
 
           <div className="rounded-lg border border-white/10 bg-white/8 p-4 text-sm leading-6 text-stone-200">
-            Microsoft 365 sign-in will be connected through Entra ID in the
-            production stage.
+            Authenticated via Microsoft Entra ID. Your access level is
+            determined by your Nowtravels Microsoft 365 security group.
           </div>
         </section>
 
@@ -958,49 +992,42 @@ function LoginScreen() {
               </div>
               <div>
                 <h2 className="text-xl font-semibold text-[#102820]">
-                  Login
+                  Sign in
                 </h2>
                 <p className="text-sm text-stone-500">
-                  Choose a demo access profile.
+                  Use your Nowtravels Microsoft 365 account.
                 </p>
               </div>
             </div>
 
-            <div className="mt-6 grid gap-3">
-              <Link
-                className="flex min-h-16 items-center justify-between rounded-md border border-stone-200 px-4 text-left transition hover:border-[#2f6f5e] hover:bg-[#f6fbf8]"
-                href="/staff"
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={() =>
+                  signIn("microsoft-entra-id", { callbackUrl: "/staff" })
+                }
+                className="flex w-full items-center justify-center gap-3 rounded-md border border-stone-200 bg-white px-4 py-3 text-sm font-semibold text-[#102820] shadow-sm transition hover:border-[#2f6f5e] hover:bg-[#f6fbf8]"
               >
-                <span>
-                  <span className="block font-semibold text-[#102820]">
-                    Continue as staff
-                  </span>
-                  <span className="mt-1 block text-sm text-stone-500">
-                  Submit and track my own tickets only
-                  </span>
-                </span>
-                <LifeBuoy size={20} className="text-[#2f6f5e]" />
-              </Link>
-
-              <Link
-                className="flex min-h-16 items-center justify-between rounded-md border border-stone-200 px-4 text-left transition hover:border-[#2f6f5e] hover:bg-[#f6fbf8]"
-                href="/admin"
-              >
-                <span>
-                  <span className="block font-semibold text-[#102820]">
-                    Continue as ICT admin
-                  </span>
-                  <span className="mt-1 block text-sm text-stone-500">
-                    Manage all tickets, users, reports, and audit logs
-                  </span>
-                </span>
-                <ShieldCheck size={20} className="text-[#2f6f5e]" />
-              </Link>
+                {/* Microsoft logo */}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 21 21"
+                  width="20"
+                  height="20"
+                  aria-hidden="true"
+                >
+                  <rect x="1" y="1" width="9" height="9" fill="#f25022" />
+                  <rect x="11" y="1" width="9" height="9" fill="#7fba00" />
+                  <rect x="1" y="11" width="9" height="9" fill="#00a4ef" />
+                  <rect x="11" y="11" width="9" height="9" fill="#ffb900" />
+                </svg>
+                Sign in with Microsoft 365
+              </button>
             </div>
 
             <div className="mt-6 rounded-md bg-stone-50 p-4 text-sm leading-6 text-stone-600">
-              For now this is a local prototype login. Later, this screen will
-              redirect to Microsoft 365 sign-in and apply roles automatically.
+              Your role (staff, ICT agent, admin) is assigned automatically from
+              your Microsoft 365 security group membership.
             </div>
           </div>
         </section>
