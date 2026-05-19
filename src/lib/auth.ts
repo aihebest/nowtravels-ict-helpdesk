@@ -89,8 +89,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           roleName,
         );
 
-        (user as Record<string, unknown>).dbId = id;
-        (user as Record<string, unknown>).roleName = resolvedRole;
+        const u = user as unknown as Record<string, unknown>;
+        u.dbId = id;
+        u.roleName = resolvedRole;
         return true;
       } catch (err) {
         console.error("[auth] signIn error:", err);
@@ -108,8 +109,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
     async session({ session, token }) {
       if (token) {
-        (session.user as Record<string, unknown>).id = token.userId;
-        (session.user as Record<string, unknown>).role = token.role;
+        const u = session.user as unknown as Record<string, unknown>;
+        u.id = token.userId;
+        u.role = token.role;
       }
       return session;
     },
