@@ -27,6 +27,13 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
 
+      - name: Debug – list generated Prisma files
+        run: |
+          echo "=== src/generated contents ==="
+          ls -la src/generated/ 2>/dev/null || echo "src/generated/ NOT FOUND"
+          echo "=== top-level files in src/generated ==="
+          find src/generated -maxdepth 2 -type f 2>/dev/null | head -30 || true
+
       - name: Run database migrations
         run: npx prisma db push --accept-data-loss
         env:
