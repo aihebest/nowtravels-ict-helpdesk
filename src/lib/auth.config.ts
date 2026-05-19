@@ -10,7 +10,8 @@ export const authConfig: NextAuthConfig = {
     MicrosoftEntraID({
       clientId: process.env.MICROSOFT_ENTRA_CLIENT_ID!,
       clientSecret: process.env.MICROSOFT_ENTRA_CLIENT_SECRET!,
-      tenantId: process.env.MICROSOFT_ENTRA_TENANT_ID!,
+      // tenantId is not in the OIDCUserConfig type; pass the tenant via issuer instead
+      issuer: `https://login.microsoftonline.com/${process.env.MICROSOFT_ENTRA_TENANT_ID}/v2.0`,
     }),
   ],
   session: { strategy: "jwt" },
